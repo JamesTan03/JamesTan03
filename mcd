@@ -1,0 +1,109 @@
+import time
+
+class Order:
+    order_count = 0
+
+    def __init__(self, order_type):
+        Order.order_count += 1
+        self.order_number = Order.order_count
+        self.order_type = order_type
+        self.status = "PENDING"
+
+class Bot:
+    bot_count = 0
+
+    def __init__(self):
+        Bot.bot_count += 1
+        self.bot_number = Bot.bot_count
+        self.status = "IDLE"
+        self.current_order = None
+
+class OrderController:
+    def __init__(self):
+        self.pending_orders = []
+        self.vip_orders = []
+        self.complete_orders = []
+        self.bots = []
+
+    def add_order(self, order_type):
+        new_order = Order(order_type)
+        if order_type == "VIP":
+            self.vip_orders.append(new_order)
+            self._reorder_vip_orders()
+        else:
+            self.pending_orders.append(new_order)
+        print(f"New {order_type} order added. Order number: {new_order.order_number}")
+
+    def _reorder_vip_orders(self):
+        self.vip_orders.sort(key=lambda x: x.order_number)
+
+    def add_bot(self):
+        new_bot = Bot()
+        self.bots.append(new_bot)
+        print(f"Bot {new_bot.bot_number} added.")
+
+    def remove_bot(self):
+        if self.bots:
+            removed_bot = self.bots.pop()
+            if removed_bot.status == "PROCESSING":
+                removed_bot.current_order.status = "PENDING"
+                print(f"Order {removed_bot.current_order.order_number} returned to PENDING status.")
+            print(f"Bot {removed_bot.bot_number} removed.")
+        else:
+            print("No bot to remove.")
+
+    def process_orders(self):
+        for bot in self.bots:
+            if bot.status == "IDLE" and self.pending_orders:
+                bot.status = "PROCESSING"
+                bot.current_order = self.pending_orders.pop(0)
+                bot.current_order.status = "PROCESSING"
+                print(f"Bot {bot.bot_number} processing order {bot.current_order.order_number}.")
+                time.sleep(10)
+                bot.current_order.status = "COMPLETE"
+                self.complete_orders.append(bot.current_order)
+                bot.status = "IDLE"
+                print(f"Order {bot.current_order.order_number} processed.")
+            elif bot.status == "IDLE" and self.vip_orders:
+                bot.status = "PROCESSING"
+                bot.current_order = self.vip_orders.pop(0)
+                bot.current_order.status = "PROCESSING"
+                print(f"Bot {bot.bot_number} processing VIP order {bot.current_order.order_number}.")
+                time.sleep(10)
+                bot.current_order.status = "COMPLETE"
+                self.complete_orders.append(bot.current_order)
+                bot.status = "IDLE"
+                print(f"VIP Order {bot.current_order.order_number} processed.")
+            else:
+                print("No orders to process or all bots are busy.")
+                break
+
+    def display_orders(self):
+        print("\nPending Orders:")
+        for order in self.pending_orders:
+            print(f"Order {order.order_number} - {order.order_type} - {order.status}")
+        print("\nVIP Orders:")
+        for order in self.vip_orders:
+            print(f"Order {order.order_number} - {order.order_type} - {order.status}")
+        print("\nComplete Orders:")
+        for order in self.complete_orders:
+            print(f"Order {order.order_number} - {order.order_type} - {order.status}")
+        print("\nBots:")
+        for bot in self.bots:
+            print(f"Bot {bot.bot_number} - {bot.status}")
+
+# Test the functionality
+controller = OrderController()
+controller.add_order("Normal")
+controller.add_order("VIP")
+controller.add_order("Normal")
+controller.add_bot()
+controller.process_orders()
+controller.display_orders()
+controller.add_order("VIP")
+controller.add_order("Normal")
+controller.process_orders()
+controller.display_orders()
+controller.remove_bot()
+controller.process_orders()
+controller.display_orders()
